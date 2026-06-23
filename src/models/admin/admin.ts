@@ -1,7 +1,7 @@
 import { mysqlTable, varchar, char, timestamp, mysqlEnum, json } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { role_restaurant } from "./role_restaurant";
-import { Permission } from "../../../types/custom";
+import { Permission } from "../../types/custom";
 
 export const admins = mysqlTable("admins", {
     id: char("id", { length: 255 }).primaryKey().notNull().default(sql`(uuid())`),

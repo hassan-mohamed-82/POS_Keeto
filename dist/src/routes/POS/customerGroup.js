@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const customerGroupController_1 = require("../../controllers/POS/customerGroupController");
+const catchAsync_1 = require("../../utils/catchAsync");
+const router = (0, express_1.Router)();
+router.post("/", (0, catchAsync_1.catchAsync)(customerGroupController_1.createCustomerGroup));
+router.get("/", (0, catchAsync_1.catchAsync)(customerGroupController_1.getAllCustomerGroups));
+router.get("/:id", (0, catchAsync_1.catchAsync)(customerGroupController_1.getCustomerGroupById));
+router.put("/:id", (0, catchAsync_1.catchAsync)(customerGroupController_1.updateCustomerGroup));
+router.delete("/:id", (0, catchAsync_1.catchAsync)(customerGroupController_1.deleteCustomerGroup));
+exports.default = router;

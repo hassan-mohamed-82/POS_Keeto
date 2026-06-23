@@ -1,6 +1,6 @@
 import { mysqlTable, varchar, text, timestamp, mysqlEnum, json, char, time ,longtext } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
-import { restaurants } from "../../schema";
+import { restaurants } from "../schema";
 
 export const popup = mysqlTable("popup", {
     id: char("id", { length: 36 }).primaryKey().default(sql`(UUID())`),

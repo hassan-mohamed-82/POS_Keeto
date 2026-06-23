@@ -9,7 +9,7 @@ import {
     time
 } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
-import { food, restaurants, zones } from "../../schema";
+import { food, restaurants, zones } from "../schema";
 export const branches = mysqlTable("branches", {
     id: char("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
     

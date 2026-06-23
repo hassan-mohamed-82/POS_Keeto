@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { ForbiddenError, UnauthorizedError } from "../Errors";
 import { db } from "../models/connection";
-import { admins } from "../models/schema/admin/admin";
-import { restrauntadmin } from "../models/schema/admin/restrauntadmin";
+import { admins } from "../models/schema";
+import { restrauntadmin } from "../models/schema";
 import { eq } from "drizzle-orm";
 import { ModuleName, ActionName } from "../types/constant";
 

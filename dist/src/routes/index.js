@@ -1,0 +1,18 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const expenseCategory_1 = __importDefault(require("./POS/expenseCategory"));
+const expense_1 = __importDefault(require("./POS/expense"));
+const cashiershift_1 = __importDefault(require("./POS/cashiershift"));
+const customerGroup_1 = __importDefault(require("./POS/customerGroup"));
+const customer_1 = __importDefault(require("./POS/customer"));
+const route = (0, express_1.Router)();
+route.use("/expense-categories", expenseCategory_1.default);
+route.use("/expenses", expense_1.default);
+route.use("/cashier-shifts", cashiershift_1.default);
+route.use("/customer-groups", customerGroup_1.default);
+route.use("/customers", customer_1.default);
+exports.default = route;

@@ -1,7 +1,7 @@
 import { mysqlTable, varchar, char, timestamp, mysqlEnum, json , text } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { rolesadmin } from "./rolesadmin";
-import { Permission } from "../../../types/custom";
+import { Permission } from "../../types/custom";
 import { restaurants } from "./restaurants";
 import { branches } from "./branches";
 

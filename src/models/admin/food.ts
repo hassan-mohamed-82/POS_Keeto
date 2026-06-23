@@ -11,7 +11,7 @@ import {
     text
 } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
-import { addons, categories, restaurants, subcategories } from "../../schema";
+import { addons, categories, restaurants, subcategories } from "../schema";
 export const food = mysqlTable("food", {
     id: char("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
 

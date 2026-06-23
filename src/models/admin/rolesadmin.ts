@@ -6,7 +6,7 @@ import {
     json,
     char,
 } from "drizzle-orm/mysql-core";
-import { Permission } from "../../../types/custom";
+import { Permission } from "../../types/custom";
 import { sql } from "drizzle-orm";
 
 export const rolesadmin = mysqlTable("rolesadmin", {
