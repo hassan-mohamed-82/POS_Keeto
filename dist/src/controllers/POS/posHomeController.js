@@ -21,9 +21,20 @@ const getCategoriesWithProducts = async (req, res) => {
     // 1) جلب كل المنتجات الخاصة بالمطعم
     const allFood = await connection_1.db.select().from(food_1.food)
         .where((0, drizzle_orm_1.eq)(food_1.food.restaurantid, restaurantId));
-    // 2) جلب كل الصب كاتيجوري الخاصة بالمطعم
-    const allSubcategories = await connection_1.db.select().from(subcategory_1.subcategories)
+    // 2) جلب كل الصب كاتيجوري الخاصة بالمطعم (عن طريق restaurantId أو عن طريق المنتجات)
+    const subsByRestaurant = await connection_1.db.select().from(subcategory_1.subcategories)
         .where((0, drizzle_orm_1.eq)(subcategory_1.subcategories.restaurantId, restaurantId));
+    // جلب الصب كاتيجوري اللى المنتجات بتاعت المطعم مرتبطة بيها
+    const subcategoryIdsFromFood = [...new Set(allFood.map(f => f.subcategoryid).filter(Boolean))];
+    const allSubsFromDB = await connection_1.db.select().from(subcategory_1.subcategories);
+    const subsFromFood = allSubsFromDB.filter(s => subcategoryIdsFromFood.includes(s.id));
+    // دمج الصب كاتيجوري بدون تكرار
+    const subsMap = new Map();
+    for (const s of subsByRestaurant)
+        subsMap.set(s.id, s);
+    for (const s of subsFromFood)
+        subsMap.set(s.id, s);
+    const allSubcategories = Array.from(subsMap.values());
     // 3) جلب الكاتيجوري IDs المستخدمة (من المنتجات + الصب كاتيجوري)
     const categoryIdsFromFood = allFood.map(f => f.categoryid);
     const categoryIdsFromSub = allSubcategories.map(s => s.categoryId);

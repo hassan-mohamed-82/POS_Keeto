@@ -21,9 +21,20 @@ export const getCategoriesWithProducts = async (req: Request, res: Response) => 
     const allFood = await db.select().from(food)
         .where(eq(food.restaurantid, restaurantId));
 
-    // 2) جلب كل الصب كاتيجوري الخاصة بالمطعم
-    const allSubcategories = await db.select().from(subcategories)
+    // 2) جلب كل الصب كاتيجوري الخاصة بالمطعم (عن طريق restaurantId أو عن طريق المنتجات)
+    const subsByRestaurant = await db.select().from(subcategories)
         .where(eq(subcategories.restaurantId, restaurantId));
+
+    // جلب الصب كاتيجوري اللى المنتجات بتاعت المطعم مرتبطة بيها
+    const subcategoryIdsFromFood = [...new Set(allFood.map(f => f.subcategoryid).filter(Boolean))] as string[];
+    const allSubsFromDB = await db.select().from(subcategories);
+    const subsFromFood = allSubsFromDB.filter(s => subcategoryIdsFromFood.includes(s.id));
+
+    // دمج الصب كاتيجوري بدون تكرار
+    const subsMap = new Map<string, typeof subsByRestaurant[0]>();
+    for (const s of subsByRestaurant) subsMap.set(s.id, s);
+    for (const s of subsFromFood) subsMap.set(s.id, s);
+    const allSubcategories = Array.from(subsMap.values());
 
     // 3) جلب الكاتيجوري IDs المستخدمة (من المنتجات + الصب كاتيجوري)
     const categoryIdsFromFood = allFood.map(f => f.categoryid);
@@ -33,6 +44,7 @@ export const getCategoriesWithProducts = async (req: Request, res: Response) => 
     // 4) جلب الكاتيجوري
     const allCategories = await db.select().from(categories);
     const relevantCategories = allCategories.filter(c => uniqueCategoryIds.includes(c.id));
+
 
     // 5) جلب الـ variations و options لكل المنتجات
     const foodIds = allFood.map(f => f.id);
