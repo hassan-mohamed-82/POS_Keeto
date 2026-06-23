@@ -35,3 +35,6 @@ export * from "./admin/Discount";
 // export * from "./admin/notifications"
 export * from "./POS/expensscategory";
 export * from "./POS/expenss";
+export * from "./admin/FinancialAccount";   
+export * from "./POS/orderpos";
+export * from "./POS/payment";

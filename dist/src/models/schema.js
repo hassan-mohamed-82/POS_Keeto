@@ -51,3 +51,6 @@ __exportStar(require("./admin/Discount"), exports);
 // export * from "./admin/notifications"
 __exportStar(require("./POS/expensscategory"), exports);
 __exportStar(require("./POS/expenss"), exports);
+__exportStar(require("./admin/FinancialAccount"), exports);
+__exportStar(require("./POS/orderpos"), exports);
+__exportStar(require("./POS/payment"), exports);
