@@ -1,69 +1,148 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "../../models/connection";
-import { expenss } from "../../models/POS/expenss";
-import { eq } from "drizzle-orm";
-import { expensscategory } from "../../models/schema";
+import { expenss, cashiershift, FinancialAccounts } from "../../models/schema";
+import { eq, and, sql } from "drizzle-orm";
+import { BadRequest, NotFound } from "../../Errors";
 import { SuccessResponse } from "../../utils/response";
-import { UnauthorizedError } from "../../Errors";
-export const createExpense = async (req: Request, res: Response): Promise<void> => {
-        const restaurantid = (req as any).user?.restaurantId;
-        const { name, amount, categoryId, shiftId, cashierId, cashiermanId, note, paymentmethodId } = req.body;
-        if (!restaurantid) {
-            throw new UnauthorizedError("Unauthorized: No restaurant ID found in token");
+
+export const createExpense = async (req: Request, res: Response) => {
+    const restaurantId = req.user?.restaurantId || req.user?.id;
+    if (!restaurantId) throw new BadRequest("Restaurant context missing");
+
+    const { name, amount, categoryId, shiftId, cashierId, note, financialAccountId } = req.body;
+    const cashiermanId = req.user?.id;
+
+    if (!cashiermanId) throw new BadRequest("User context missing");
+
+    let actualShiftId = shiftId;
+
+    if (shiftId) {
+        const [providedShift] = await db.select().from(cashiershift)
+            .where(and(eq(cashiershift.id, shiftId), eq(cashiershift.status, "open")))
+            .limit(1);
+        if (!providedShift) {
+            throw new BadRequest("The provided shift is not open or does not exist");
         }
-        await db.insert(expenss).values({
-            restaurantid,
+    } else {
+        const [openShift] = await db.select().from(cashiershift)
+            .where(and(
+                eq(cashiershift.cashiermanId, cashiermanId),
+                eq(cashiershift.status, "open")
+            ))
+            .limit(1);
+
+        if (!openShift) {
+            throw new BadRequest("You must have an open shift to create an expense");
+        }
+        actualShiftId = openShift.id;
+    }
+
+    if (!financialAccountId) {
+        throw new BadRequest("Financial Account ID is required");
+    }
+
+    const [account] = await db.select().from(FinancialAccounts)
+        .where(and(
+            eq(FinancialAccounts.id, financialAccountId),
+            eq(FinancialAccounts.restaurantId, restaurantId)
+        ))
+        .limit(1);
+
+    if (!account) {
+        throw new NotFound("Financial account not found");
+    }
+
+    if (Number(account.balance) < Number(amount)) {
+        throw new BadRequest("Insufficient funds in the selected financial account");
+    }
+
+    await db.transaction(async (tx) => {
+        await tx.insert(expenss).values({
+            restrauntid: restaurantId,
             name,
             amount,
             categoryId,
-            shiftId,
+            shiftId: actualShiftId,
             cashierId,
             cashiermanId,
             note,
-            paymentmethodId
+            financialAccountId
         });
-        return SuccessResponse(res, { message: "Expense created successfully" });
-    
+
+        await tx.update(FinancialAccounts)
+            .set({ balance: sql`${FinancialAccounts.balance} - ${amount}` })
+            .where(eq(FinancialAccounts.id, financialAccountId));
+
+        await tx.update(cashiershift)
+            .set({ totalExpenses: sql`${cashiershift.totalExpenses} + ${amount}` })
+            .where(eq(cashiershift.id, actualShiftId));
+    });
+
+    return SuccessResponse(res, { message: "Expense created successfully" }, 201);
 };
 
-export const getAllExpenses = async (req: Request, res: Response): Promise<void> => {
-    const expenses = await db.select().from(expenss);
+export const getAllExpenses = async (req: Request, res: Response) => {
+    const restaurantId = req.user?.restaurantId || req.user?.id;
+    if (!restaurantId) throw new BadRequest("Restaurant context missing");
+
+    const expenses = await db.select().from(expenss)
+        .where(eq(expenss.restrauntid, restaurantId));
+
     return SuccessResponse(res, { message: "Expenses fetched successfully", data: expenses });
 };
 
-export const getExpenseById = async (req: Request, res: Response): Promise<void> => {
+export const getExpenseById = async (req: Request, res: Response) => {
+    const restaurantId = req.user?.restaurantId || req.user?.id;
+    if (!restaurantId) throw new BadRequest("Restaurant context missing");
+
     const { id } = req.params;
-    const expense = await db.select().from(expenss).where(eq(expenss.id, id));
-    if (!expense.length) {
-        res.status(404).json({ message: "Expense not found" });
-        return;
-    }
-    return SuccessResponse(res, { message: "Expense fetched successfully", data: expense[0] });
+    const [expense] = await db.select().from(expenss)
+        .where(and(eq(expenss.id, id), eq(expenss.restrauntid, restaurantId)))
+        .limit(1);
+
+    if (!expense) throw new NotFound("Expense not found");
+
+    return SuccessResponse(res, { message: "Expense fetched successfully", data: expense });
 };
 
-export const updateExpense = async (req: Request, res: Response): Promise<void> => {
-        const { id } = req.params;
-        const { name, amount, categoryId, shiftId, cashierId, cashiermanId, note, paymentmethodId } = req.body;
-        await db.update(expenss).set({
-            name,
-            amount,
-            categoryId,
-            shiftId,
-            cashierId,
-            cashiermanId,
-            note,
-            paymentmethodId
-        }).where(eq(expenss.id, id));
-        return SuccessResponse(res, { message: "Expense updated successfully" });
-    };
+export const updateExpense = async (req: Request, res: Response) => {
+    const restaurantId = req.user?.restaurantId || req.user?.id;
+    if (!restaurantId) throw new BadRequest("Restaurant context missing");
 
-export const deleteExpense = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
+    const { name, amount, categoryId, shiftId, cashierId, note, financialAccountId } = req.body;
+
+    const [existing] = await db.select().from(expenss)
+        .where(and(eq(expenss.id, id), eq(expenss.restrauntid, restaurantId)))
+        .limit(1);
+    if (!existing) throw new NotFound("Expense not found");
+
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (amount !== undefined) updateData.amount = amount;
+    if (categoryId !== undefined) updateData.categoryId = categoryId;
+    if (shiftId !== undefined) updateData.shiftId = shiftId;
+    if (cashierId !== undefined) updateData.cashierId = cashierId;
+    if (note !== undefined) updateData.note = note;
+    if (financialAccountId !== undefined) updateData.financialAccountId = financialAccountId;
+
+    await db.update(expenss).set(updateData).where(eq(expenss.id, id));
+
+    return SuccessResponse(res, { message: "Expense updated successfully" });
+};
+
+export const deleteExpense = async (req: Request, res: Response) => {
+    const restaurantId = req.user?.restaurantId || req.user?.id;
+    if (!restaurantId) throw new BadRequest("Restaurant context missing");
+
+    const { id } = req.params;
+
+    const [existing] = await db.select().from(expenss)
+        .where(and(eq(expenss.id, id), eq(expenss.restrauntid, restaurantId)))
+        .limit(1);
+    if (!existing) throw new NotFound("Expense not found");
+
     await db.delete(expenss).where(eq(expenss.id, id));
-    return SuccessResponse(res, { message: "Expense deleted successfully" });
-};
 
-export const getAllExpensesscategory = async (req: Request, res: Response): Promise<void> => {
-    const expenses = await db.select().from(expensscategory);
-    return SuccessResponse(res, { message: "Expense category fetched successfully", data: expenses });
+    return SuccessResponse(res, { message: "Expense deleted successfully" });
 };

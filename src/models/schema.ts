@@ -1,5 +1,5 @@
 // Admin schema
-export * from"./admin/admin";
+export * from "./admin/admin";
 export * from "./admin/role_restaurant";
 export * from "./admin/restrauntadmin";
 export * from "./admin/rolesadmin";
@@ -35,6 +35,6 @@ export * from "./admin/Discount";
 // export * from "./admin/notifications"
 export * from "./POS/expensscategory";
 export * from "./POS/expenss";
-export * from "./admin/FinancialAccount";   
+export * from "./admin/FinancialAccount";
 export * from "./POS/orderpos";
 export * from "./POS/payment";

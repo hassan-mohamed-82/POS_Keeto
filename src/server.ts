@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-import ApiRoute from "./routes";
+import ApiRoute from "./routes/POS";
 import { errorHandler } from "./middlewares/errorHandler";
 import { NotFound } from "./Errors";
 import dotenv from "dotenv";
@@ -9,12 +9,12 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import http from "http";
 import { Server } from "socket.io";
-import { connectDB } from './models/connection'; 
+import { connectDB } from './models/connection';
 
 dotenv.config();
 
 const app = express();
-connectDB(); 
+connectDB();
 
 const httpServer = http.createServer(app);
 
